@@ -1,0 +1,15 @@
+Account,Stage,Amount,CloseDate,LastContact,Probability,NextStep
+Northwind Logistics,Negotiation,88000,2026-06-30,2026-06-17,80,Send redlined contract
+Cedar & Co,Proposal,52000,2026-07-15,2026-06-10,60,Share security overview
+Atlas Freight,Discovery,120000,2026-08-20,2026-06-18,30,Confirm 3-year pricing
+Vantage Health,Demo,46000,2026-07-31,2026-05-28,40,Reschedule technical demo
+Polaris Manufacturing,Proposal,75000,2026-07-10,2026-05-20,55,Follow up on proposal
+Brightline Retail,Negotiation,64000,2026-06-25,2026-06-16,75,Align on implementation timeline
+Summit Foods,Discovery,38000,2026-09-05,2026-06-12,25,Book discovery with VP Ops
+Harbor Freight Co,Demo,91000,2026-08-01,2026-06-05,45,Send ROI model
+Meridian Tech,Proposal,57000,2026-07-22,2026-04-30,50,Re-engage champion
+Cobalt Energy,Closed Won,110000,2026-06-05,2026-06-05,100,Kickoff scheduled
+Ridgeline Builders,Closed Lost,42000,2026-05-30,2026-05-15,0,Lost to incumbent
+Lumen Systems,Discovery,29000,2026-09-15,2026-06-19,20,Qualify budget
+Tidewater Group,Negotiation,83000,2026-07-05,2026-06-09,70,Procurement review
+Apex Distribution,Demo,48000,2026-08-12,2026-06-14,40,Demo follow-up
