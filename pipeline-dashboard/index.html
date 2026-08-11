@@ -1,1 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sales Pipeline Dashboard</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --surface-0: #f4f4f2;
+    --surface-1: #fcfcfb;
+    --surface-2: #f0f0ed;
+    --border:    #e2e2dd;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #86857f;
+    --series-1: #2a78d6;
+    --track:    #e8e8e3;
+    --good:     #0ca30c;
+    --warning:  #fab219;
+    --serious:  #ec835a;
+    --critical: #d03b3b;
+    --good-ink:     #0a7a0a;
+    --warning-ink:  #8a6205;
+    --critical-ink: #b02c2c;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-0: #131312;
+      --surface-1: #1e1e1c;
+      --surface-2: #262624;
+      --border:    #34342f;
+      --text-primary:   #f5f5f0;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #8f8e84;
+      --series-1: #3987e5;
+      --track:    #2f2f2b;
+      --good:     #0ca30c;
+      --warning:  #fab219;
+      --serious:  #ec835a;
+      --critical: #d03b3b;
+      --good-ink:     #4ec24e;
+      --warning-ink:  #fab219;
+      --critical-ink: #ec6f6f;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 4px 20px rgba(0,0,0,.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+    background: var(--surface-0);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 32px 24px 64px; }
+  header.page { margin-bottom: 24px; }
+  h1 { font-size: 22px; margin: 0 0 4px; letter-spacing: -.01em; }
+  .sub { color: var(--text-secondary); font-size: 13.5px; }
+  .sub b { color: var(--text-primary); font-weight: 600; }
+  h2 { font-size: 15px; margin: 0; letter-spacing: -.005em; }
+  section.card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    margin-top: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+  .card-head .count { color: var(--text-muted); font-size: 13px; font-variant-numeric: tabular-nums; }
 
+  /* KPI tiles */
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  @media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+  }
+  .tile .label { font-size: 12.5px; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .tile .value { font-size: 27px; font-weight: 650; letter-spacing: -.02em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  .tile .note { font-size: 12px; color: var(--text-muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .tile.flag-critical .value { color: var(--critical-ink); }
+  .tile.flag-warning  .value { color: var(--warning-ink); }
+
+  /* Stage breakdown */
+  .stage-row { display: grid; grid-template-columns: 130px 1fr auto; align-items: center; gap: 14px; padding: 7px 0; }
+  .stage-name { font-size: 13.5px; color: var(--text-secondary); font-weight: 500; }
+  .stage-name .n { color: var(--text-muted); font-weight: 400; }
+  .bar-track { background: var(--track); border-radius: 5px; height: 20px; position: relative; overflow: hidden; }
+  .bar-fill {
+    height: 100%; background: var(--series-1);
+    border-radius: 0 5px 5px 0; min-width: 3px;
+    transition: width .6s cubic-bezier(.2,.7,.2,1);
+  }
+  .stage-amt { font-variant-numeric: tabular-nums; font-size: 13.5px; font-weight: 600; text-align: right; white-space: nowrap; }
+  .stage-amt .w { display: block; font-size: 11.5px; color: var(--text-muted); font-weight: 400; }
+
+  /* Tables */
+  .tbl-scroll { overflow-x: auto; margin: 0 -20px -4px; padding: 0 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-weight: 600; color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; padding: 0 14px 8px 0; white-space: nowrap; }
+  td { padding: 10px 14px 10px 0; border-top: 1px solid var(--border); vertical-align: top; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .acct { font-weight: 600; }
+  .next { color: var(--text-secondary); }
+  tr .stage-pill { display: inline-block; font-size: 11.5px; color: var(--text-secondary); background: var(--surface-2); border: 1px solid var(--border); padding: 1px 8px; border-radius: 999px; white-space: nowrap; }
+
+  .badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+  .badge.critical { color: var(--critical-ink); background: color-mix(in srgb, var(--critical) 14%, transparent); }
+  .badge.warning  { color: var(--warning-ink);  background: color-mix(in srgb, var(--warning) 20%, transparent); }
+  .badge.good     { color: var(--good-ink);      background: color-mix(in srgb, var(--good) 16%, transparent); }
+  .badge.gap      { color: var(--text-primary);  background: color-mix(in srgb, var(--serious) 22%, transparent); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .soon { color: var(--critical-ink); font-weight: 600; }
+  .muted { color: var(--text-muted); }
+  .gapval { color: var(--serious); font-weight: 600; }
+
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 6px 0 2px; }
+  footer { margin-top: 28px; color: var(--text-muted); font-size: 12px; }
+  .loader-msg { padding: 40px 20px; text-align: center; color: var(--text-secondary); }
+  .loader-msg input { margin-top: 12px; }
+  .split { display: grid; grid-template-columns: 1fr; gap: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>Sales Pipeline Dashboard</h1>
+    <div class="sub" id="subtitle">Loading pipeline…</div>
+  </header>
+  <div id="app"></div>
+  <footer id="footer"></footer>
+</div>
+
+<script>
+const CSV_FILE = "deals.csv";
+const OPEN_EXCLUDE = ["closed won", "closed lost"];
+const STAGE_ORDER = ["Discovery", "Demo", "Proposal", "Negotiation", "Closed Won", "Closed Lost"];
+const QUIET_DAYS = 10;
+const MS_DAY = 86400000;
+
+const fmtMoney = n => "$" + Math.round(n).toLocaleString("en-US");
+const fmtMoneyK = n => n >= 1000 ? "$" + (n/1000).toFixed(n % 1000 === 0 ? 0 : 1) + "k" : "$" + Math.round(n);
+
+function today() { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+
+// --- Minimal robust CSV parser (handles quoted fields) ---
+function parseCSV(text) {
+  const rows = []; let row = [], field = "", inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i+1] === '"') { field += '"'; i++; } else inQ = false; }
+      else field += c;
+    } else {
+      if (c === '"') inQ = true;
+      else if (c === ",") { row.push(field); field = ""; }
+      else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+      else if (c === "\r") { /* skip */ }
+      else field += c;
+    }
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(r => r.some(c => c.trim() !== ""));
+}
+
+function parseDate(s) {
+  if (!s || !s.trim()) return null;
+  const m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  const d = new Date(+m[1], +m[2]-1, +m[3]);
+  return isNaN(d) ? null : d;
+}
+function parseNum(s) {
+  if (s == null) return null;
+  const cleaned = String(s).replace(/[^0-9.\-]/g, "");
+  if (cleaned === "" || cleaned === "-") return null;
+  const n = parseFloat(cleaned);
+  return isNaN(n) ? null : n;
+}
+function daysBetween(a, b) { return Math.floor((a - b) / MS_DAY); }
+function fmtDate(d) { return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }); }
+
+function buildDeal(obj) {
+  const amount = parseNum(obj.Amount);
+  let prob = parseNum(obj.Probability);
+  if (prob != null && prob > 1) prob = prob / 100;   // 0–100 → 0–1
+  const closeDate = parseDate(obj.CloseDate);
+  const lastContact = parseDate(obj.LastContact);
+  const stage = (obj.Stage || "").trim();
+  const isOpen = stage !== "" && !OPEN_EXCLUDE.includes(stage.toLowerCase());
+  const gaps = [];
+  if (amount == null) gaps.push("Amount");
+  if (isOpen && closeDate == null) gaps.push("CloseDate");
+  if (isOpen && lastContact == null) gaps.push("LastContact");
+  if (isOpen && prob == null) gaps.push("Probability");
+  return {
+    account: (obj.Account || "(unnamed)").trim(),
+    stage, isOpen, amount, prob, closeDate, lastContact,
+    nextStep: (obj.NextStep || "").trim(),
+    gaps,
+    weighted: (amount != null && prob != null) ? amount * prob : null,
+    daysSinceContact: lastContact ? daysBetween(today(), lastContact) : null,
+    daysToClose: closeDate ? daysBetween(closeDate, today()) : null,
+  };
+}
+
+function render(deals) {
+  const t = today();
+  const open = deals.filter(d => d.isOpen);
+  const totalOpen = open.reduce((s, d) => s + (d.amount || 0), 0);
+  const weighted = open.reduce((s, d) => s + (d.weighted || 0), 0);
+
+  const atRisk = open.filter(d => d.daysSinceContact != null && d.daysSinceContact >= QUIET_DAYS)
+                     .sort((a, b) => b.daysSinceContact - a.daysSinceContact);
+  const atRiskAmt = atRisk.reduce((s, d) => s + (d.amount || 0), 0);
+
+  const gapDeals = deals.filter(d => d.gaps.length > 0);
+
+  document.getElementById("subtitle").innerHTML =
+    `<b>${open.length}</b> open deals · reporting as of <b>${fmtDate(t)}</b> · quiet threshold <b>${QUIET_DAYS} days</b>`;
+
+  // ---- KPI tiles ----
+  const tiles = `
+    <div class="tiles">
+      <div class="tile">
+        <div class="label">Total open pipeline</div>
+        <div class="value">${fmtMoney(totalOpen)}</div>
+        <div class="note">${open.length} open deal${open.length===1?"":"s"}</div>
+      </div>
+      <div class="tile">
+        <div class="label">Weighted forecast</div>
+        <div class="value">${fmtMoney(weighted)}</div>
+        <div class="note">amount × probability, open deals</div>
+      </div>
+      <div class="tile ${atRisk.length ? "flag-critical" : ""}">
+        <div class="label"><span class="dot" style="background:var(--critical)"></span>At-risk (quiet ≥${QUIET_DAYS}d)</div>
+        <div class="value">${atRisk.length}</div>
+        <div class="note">${fmtMoney(atRiskAmt)} exposed</div>
+      </div>
+      <div class="tile ${gapDeals.length ? "flag-warning" : ""}">
+        <div class="label"><span class="dot" style="background:var(--serious)"></span>Data gaps</div>
+        <div class="value">${gapDeals.length}</div>
+        <div class="note">${gapDeals.length ? "missing dates / fields" : "none — data complete"}</div>
+      </div>
+    </div>`;
+
+  // ---- Stage breakdown (open pipeline) ----
+  const byStage = {};
+  open.forEach(d => {
+    const k = d.stage || "(no stage)";
+    (byStage[k] = byStage[k] || { count: 0, amount: 0, weighted: 0 });
+    byStage[k].count++; byStage[k].amount += d.amount || 0; byStage[k].weighted += d.weighted || 0;
+  });
+  const stageKeys = Object.keys(byStage).sort((a, b) => {
+    const ia = STAGE_ORDER.indexOf(a), ib = STAGE_ORDER.indexOf(b);
+    return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+  });
+  const maxStageAmt = Math.max(1, ...stageKeys.map(k => byStage[k].amount));
+  const stageRows = stageKeys.map(k => {
+    const s = byStage[k];
+    const pct = (s.amount / maxStageAmt) * 100;
+    return `<div class="stage-row" title="${k}: ${fmtMoney(s.amount)} across ${s.count} deal(s), weighted ${fmtMoney(s.weighted)}">
+      <div class="stage-name">${k} <span class="n">· ${s.count}</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+      <div class="stage-amt">${fmtMoney(s.amount)}<span class="w">wtd ${fmtMoneyK(s.weighted)}</span></div>
+    </div>`;
+  }).join("");
+  const stageCard = `
+    <section class="card">
+      <div class="card-head"><h2>Open pipeline by stage</h2><span class="count">${fmtMoney(totalOpen)} total</span></div>
+      ${stageKeys.length ? stageRows : '<div class="empty">No open deals.</div>'}
+    </section>`;
+
+  // ---- At-risk (quiet) ----
+  const riskRows = atRisk.map(d => `
+    <tr>
+      <td class="acct">${d.account}</td>
+      <td><span class="stage-pill">${d.stage}</span></td>
+      <td class="num">${d.amount != null ? fmtMoney(d.amount) : '<span class="gapval">— gap</span>'}</td>
+      <td class="num">${fmtDate(d.lastContact)}</td>
+      <td class="num"><span class="badge ${d.daysSinceContact >= 30 ? "critical" : "warning"}">${d.daysSinceContact}d quiet</span></td>
+      <td class="next">${d.nextStep || '<span class="muted">—</span>'}</td>
+    </tr>`).join("");
+  const riskCard = `
+    <section class="card">
+      <div class="card-head"><h2>At-risk — gone quiet</h2><span class="count">${atRisk.length} deal${atRisk.length===1?"":"s"} · ${fmtMoney(atRiskAmt)}</span></div>
+      ${atRisk.length ? `<div class="tbl-scroll"><table>
+        <thead><tr><th>Account</th><th>Stage</th><th class="num">Amount</th><th class="num">Last contact</th><th class="num">Quiet for</th><th>Next step</th></tr></thead>
+        <tbody>${riskRows}</tbody></table></div>`
+        : '<div class="empty">No open deals have been quiet for ' + QUIET_DAYS + '+ days. 🎉</div>'}
+    </section>`;
+
+  // ---- Priorities: open deals by amount (biggest first) ----
+  const ranked = open.slice().sort((a, b) => {
+    if (a.amount == null && b.amount == null) return 0;
+    if (a.amount == null) return 1;   // missing amount can't be ranked → bottom
+    if (b.amount == null) return -1;
+    return b.amount - a.amount;        // largest first
+  });
+  const missingAmt = ranked.filter(d => d.amount == null).length;
+  const prioRows = ranked.map(d => {
+    const quiet = d.daysSinceContact != null && d.daysSinceContact >= QUIET_DAYS;
+    let closeCell;
+    if (d.closeDate) {
+      const overdue = d.daysToClose < 0;
+      const closeCls = (d.daysToClose <= 14) ? "soon" : "";
+      const dueLabel = overdue ? `${Math.abs(d.daysToClose)}d overdue`
+                     : d.daysToClose === 0 ? "today" : `in ${d.daysToClose}d`;
+      closeCell = `<td class="num ${closeCls}">${fmtDate(d.closeDate)}<br><span class="muted" style="font-size:11.5px">${dueLabel}</span></td>`;
+    } else {
+      closeCell = `<td class="num"><span class="badge gap">no close date</span></td>`;
+    }
+    return `<tr>
+      <td class="acct">${d.account}</td>
+      <td><span class="stage-pill">${d.stage}</span></td>
+      <td class="num">${d.amount != null ? fmtMoney(d.amount) : '<span class="gapval">— gap</span>'}</td>
+      ${closeCell}
+      <td class="num">${d.lastContact ? d.daysSinceContact + "d ago" : '<span class="gapval">— gap</span>'}</td>
+      <td>${quiet ? '<span class="badge critical">at-risk</span>' : '<span class="badge good">active</span>'}</td>
+      <td class="next">${d.nextStep || '<span class="muted">—</span>'}</td>
+    </tr>`;
+  }).join("");
+  const prioCard = `
+    <section class="card">
+      <div class="card-head"><h2>Priorities — largest first</h2><span class="count">${ranked.length} open deal${ranked.length===1?"":"s"}</span></div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Account</th><th>Stage</th><th class="num">Amount</th><th class="num">Close date</th><th class="num">Last contact</th><th>Status</th><th>Next step</th></tr></thead>
+        <tbody>${prioRows}</tbody></table></div>
+      ${missingAmt ? `<div class="empty">↑ ${missingAmt} deal${missingAmt===1?"":"s"} missing an amount — listed last, not ranked (flagged, not guessed).</div>` : ""}
+    </section>`;
+
+  // ---- Data gaps ----
+  let gapCard = "";
+  if (gapDeals.length) {
+    const gapRows = gapDeals.map(d => `<tr>
+      <td class="acct">${d.account}</td>
+      <td><span class="stage-pill">${d.stage || "(no stage)"}</span></td>
+      <td>${d.gaps.map(g => `<span class="badge gap">${g}</span>`).join(" ")}</td>
+    </tr>`).join("");
+    gapCard = `
+    <section class="card">
+      <div class="card-head"><h2>Data gaps</h2><span class="count">${gapDeals.length} deal${gapDeals.length===1?"":"s"}</span></div>
+      <div class="sub" style="margin-bottom:12px">Missing fields are flagged, never inferred. Deals missing a close or last-contact date are excluded from the metric they'd affect.</div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Account</th><th>Stage</th><th>Missing</th></tr></thead>
+        <tbody>${gapRows}</tbody></table></div>
+    </section>`;
+  }
+
+  document.getElementById("app").innerHTML = tiles + stageCard + riskCard + prioCard + gapCard;
+  document.getElementById("footer").innerHTML =
+    `Source: <code>${CSV_FILE}</code> · ${deals.length} rows · ${open.length} open, ${deals.length - open.length} closed. ` +
+    `Weighted forecast = Σ(amount × probability) over open deals. "At-risk" = open &amp; no contact for ${QUIET_DAYS}+ days.`;
+}
+
+function boot(text) {
+  const rows = parseCSV(text);
+  if (rows.length < 2) { showError("CSV has no data rows."); return; }
+  const header = rows[0].map(h => h.trim());
+  const deals = rows.slice(1).map(r => {
+    const o = {}; header.forEach((h, i) => o[h] = r[i] != null ? r[i] : "");
+    return buildDeal(o);
+  });
+  render(deals);
+}
+
+function showError(msg) {
+  document.getElementById("subtitle").textContent = "Couldn't load the CSV automatically.";
+  document.getElementById("app").innerHTML = `
+    <section class="card"><div class="loader-msg">
+      <div>${msg}</div>
+      <div style="margin-top:8px" class="muted">If you opened this file directly, browsers block reading <code>${CSV_FILE}</code>.
+      Load it here, or serve the folder (see below).</div>
+      <input type="file" accept=".csv" id="picker">
+      <div class="muted" style="margin-top:14px">Or run a local server in this folder:<br>
+      <code>python3 -m http.server 8000</code> &nbsp;then open&nbsp; <code>http://localhost:8000</code></div>
+    </div></section>`;
+  document.getElementById("picker").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader(); r.onload = () => boot(r.result); r.readAsText(f);
+  });
+}
+
+fetch(CSV_FILE)
+  .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); })
+  .then(boot)
+  .catch(err => showError(err.message));
+</script>
+</body>
+</html>
