@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deal Calculator</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --ink: #1c2024;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --accent: #2563eb;
+    --good: #16a34a;
+    --field: #f9fafb;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161a;
+      --card: #1e2126;
+      --ink: #f3f4f6;
+      --muted: #9ca3af;
+      --line: #2d3138;
+      --accent: #3b82f6;
+      --good: #22c55e;
+      --field: #262a30;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    padding: 24px 16px;
+    min-height: 100vh;
+  }
+  .app {
+    width: 100%;
+    max-width: 440px;
+  }
+  h1 {
+    font-size: 20px;
+    margin: 0 0 4px;
+  }
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .field {
+    margin-bottom: 16px;
+  }
+  label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  .input-wrap .prefix,
+  .input-wrap .suffix {
+    position: absolute;
+    color: var(--muted);
+    font-size: 15px;
+    pointer-events: none;
+  }
+  .prefix { left: 12px; }
+  .suffix { right: 12px; }
+  input[type="number"] {
+    width: 100%;
+    padding: 11px 12px;
+    font-size: 16px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--field);
+    color: var(--ink);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input.has-prefix { padding-left: 26px; }
+  input.has-suffix { padding-right: 30px; }
+  input:focus { border-color: var(--accent); }
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* Discount slider gauge */
+  .disc-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .disc-val {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .disc-label {
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 6px;
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 10px;
+    border-radius: 6px;
+    background: var(--line);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid currentColor;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid currentColor;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+    cursor: pointer;
+  }
+  .disc-scale {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .results {
+    margin-top: 20px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    font-size: 15px;
+  }
+  .row .k { color: var(--muted); }
+  .row.save .v { color: var(--good); font-weight: 600; }
+  .row.total {
+    margin-top: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--line);
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .row.total .k { color: var(--ink); font-weight: 700; font-size: 15px; align-self: center; }
+  .pill {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--good);
+    background: color-mix(in srgb, var(--good) 15%, transparent);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: 8px;
+  }
+  .reset {
+    margin-top: 16px;
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    cursor: pointer;
+  }
+  .reset:hover { color: var(--ink); border-color: var(--muted); }
+
+  /* Commission (internal) block */
+  .internal {
+    margin-top: 14px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px dashed color-mix(in srgb, var(--accent) 40%, var(--line));
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .internal-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .internal .comm-field {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+  }
+  .internal .comm-field label {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .internal .pct-wrap { position: relative; display: flex; align-items: center; width: 90px; }
+  .internal .pct-wrap .suffix { position: absolute; right: 10px; color: var(--muted); font-size: 13px; pointer-events: none; }
+  .internal input.comm-pct {
+    width: 100%;
+    padding: 8px 24px 8px 10px;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    outline: none;
+    text-align: right;
+  }
+  .internal input.comm-pct:focus { border-color: var(--accent); }
+  .internal input.comm-pct::-webkit-outer-spin-button,
+  .internal input.comm-pct::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .internal input.comm-pct { -moz-appearance: textfield; }
+  .internal .comm-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed color-mix(in srgb, var(--accent) 30%, var(--line));
+  }
+  .internal .comm-total .k { font-size: 13px; font-weight: 600; }
+  .internal .comm-total .v { font-size: 18px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+  /* Split section */
+  .split {
+    margin-top: 20px;
+    border-top: 1px solid var(--line);
+    padding-top: 16px;
+  }
+  .split-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .split-head .title { font-size: 15px; font-weight: 700; }
+  .toggle {
+    display: inline-flex;
+    background: var(--field);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 2px;
+    gap: 2px;
+  }
+  .toggle button {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .toggle button.active {
+    background: var(--card);
+    color: var(--ink);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+  .party {
+    display: grid;
+    grid-template-columns: 1fr 74px auto;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .party input[type="text"] {
+    width: 100%;
+    padding: 9px 11px;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--ink);
+    outline: none;
+  }
+  .party input[type="text"]:focus { border-color: var(--accent); }
+  .party .pct-wrap { position: relative; display: flex; align-items: center; }
+  .party .pct-wrap .suffix { position: absolute; right: 9px; color: var(--muted); font-size: 13px; pointer-events: none; }
+  .party input.pct {
+    width: 100%;
+    padding: 9px 22px 9px 10px;
+    font-size: 14px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--ink);
+    outline: none;
+    text-align: right;
+  }
+  .party input.pct:focus { border-color: var(--accent); }
+  .party input.pct:disabled { opacity: .7; cursor: not-allowed; }
+  .party input.pct::-webkit-outer-spin-button,
+  .party input.pct::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .party input.pct { -moz-appearance: textfield; }
+  .party .due {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    min-width: 84px;
+    font-variant-numeric: tabular-nums;
+  }
+  .split-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--line);
+    font-size: 13px;
+  }
+  .split-foot .k { color: var(--muted); }
+  .split-foot .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .split-foot .v.warn { color: #dc2626; }
+  .split-foot .v.ok { color: var(--good); }
+  @media (prefers-color-scheme: dark) { .split-foot .v.warn { color: #f87171; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Deal Calculator</h1>
+  <p class="sub">Work out the real price after a discount and tax.</p>
+
+  <div class="card">
+    <div class="field">
+      <label for="price">Original price</label>
+      <div class="input-wrap">
+        <span class="prefix">$</span>
+        <input class="has-prefix" type="number" id="price" placeholder="0.00" min="0" step="0.01" inputmode="decimal">
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="disc-head">
+        <label for="discount" style="margin:0;">Discount</label>
+        <span><span class="disc-val" id="disc-val">0%</span><span class="disc-label" id="disc-label"></span></span>
+      </div>
+      <input type="range" id="discount" min="0" max="100" step="1" value="0">
+      <div class="disc-scale"><span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span></div>
+    </div>
+
+    <div class="field">
+      <label for="tax">Sales tax (optional)</label>
+      <div class="input-wrap">
+        <input class="has-suffix" type="number" id="tax" placeholder="0" min="0" step="0.01" inputmode="decimal">
+        <span class="suffix">%</span>
+      </div>
+    </div>
+
+    <div class="results">
+      <div class="row">
+        <span class="k">Discounted price</span>
+        <span class="v" id="r-discounted">$0.00</span>
+      </div>
+      <div class="row save">
+        <span class="k">You save <span class="pill" id="r-pill">0%</span></span>
+        <span class="v" id="r-savings">$0.00</span>
+      </div>
+      <div class="row">
+        <span class="k">Tax</span>
+        <span class="v" id="r-tax">$0.00</span>
+      </div>
+      <div class="row total">
+        <span class="k">Total price</span>
+        <span class="v" id="r-total">$0.00</span>
+      </div>
+
+      <div class="internal">
+        <span class="internal-tag">Internal · Commission</span>
+        <div class="comm-field">
+          <label for="commission">Commission rate (% of total price)</label>
+          <div class="pct-wrap">
+            <input type="number" class="comm-pct" id="commission" placeholder="0" min="0" step="0.01" inputmode="decimal">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="comm-total">
+          <span class="k">Commission on deal</span>
+          <span class="v" id="r-commission">$0.00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="split">
+      <div class="split-head">
+        <span class="title">Split between parties</span>
+        <div class="toggle" id="toggle">
+          <button data-mode="equal" class="active">Equal</button>
+          <button data-mode="custom">Custom %</button>
+        </div>
+      </div>
+      <div id="parties"></div>
+      <div class="split-foot">
+        <span class="k">Percentages total</span>
+        <span class="v ok" id="pct-sum">100%</span>
+      </div>
+    </div>
+
+    <button class="reset" id="reset">Clear</button>
+  </div>
+</div>
+
+<script>
+  const $ = id => document.getElementById(id);
+  const price = $('price'), discount = $('discount'), tax = $('tax'), commission = $('commission');
+  const money = n => '$' + (isFinite(n) ? n : 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+
+  // Color gauge for discount aggressiveness: green (0%) -> red (100%)
+  function renderGauge(d) {
+    const hue = 130 * (1 - Math.min(d, 60) / 60); // green->red by ~60%, then stays red
+    const color = 'hsl(' + hue + ', 78%, 45%)';
+    discount.style.background =
+      'linear-gradient(90deg, ' + color + ' 0% ' + d + '%, var(--line) ' + d + '% 100%)';
+    discount.style.color = color;               // drives thumb border (currentColor)
+    $('disc-val').textContent = d + '%';
+    $('disc-val').style.color = d > 0 ? color : 'var(--ink)';
+    const label =
+      d === 0  ? '' :
+      d <= 15  ? 'Conservative' :
+      d <= 30  ? 'Moderate' :
+      d <= 50  ? 'Aggressive' : 'Steep';
+    const lab = $('disc-label');
+    lab.textContent = label;
+    lab.style.color = color;
+  }
+
+  /* ---- Split state ---- */
+  const PARTY_COUNT = 5;
+  let splitMode = 'equal';                 // 'equal' | 'custom'
+  const customPct = new Array(PARTY_COUNT).fill(''); // remembers manual entries
+  let currentTotal = 0;
+
+  // Build 5 party rows
+  const partiesEl = $('parties');
+  for (let i = 0; i < PARTY_COUNT; i++) {
+    const row = document.createElement('div');
+    row.className = 'party';
+    row.innerHTML =
+      '<input type="text" placeholder="Party ' + (i + 1) + ' name" data-name="' + i + '">' +
+      '<div class="pct-wrap">' +
+        '<input type="number" class="pct" min="0" max="100" step="0.01" inputmode="decimal" data-pct="' + i + '">' +
+        '<span class="suffix">%</span>' +
+      '</div>' +
+      '<span class="due" data-due="' + i + '">$0.00</span>';
+    partiesEl.appendChild(row);
+  }
+  const nameInputs = [...document.querySelectorAll('[data-name]')];
+  const pctInputs  = [...document.querySelectorAll('[data-pct]')];
+  const dueEls     = [...document.querySelectorAll('[data-due]')];
+
+  // Which rows count for an equal split: named rows, or all 5 if none named
+  function equalTargets() {
+    const named = nameInputs.map((el, i) => el.value.trim() ? i : -1).filter(i => i >= 0);
+    return named.length ? named : nameInputs.map((_, i) => i);
+  }
+
+  function percentages() {
+    if (splitMode === 'equal') {
+      const targets = equalTargets();
+      const share = 100 / targets.length;
+      return nameInputs.map((_, i) => targets.includes(i) ? share : 0);
+    }
+    return customPct.map(v => parseFloat(v) || 0);
+  }
+
+  function renderSplit() {
+    const pcts = percentages();
+
+    // Distribute money so the parts sum exactly to the total (fix rounding on last party)
+    let allocated = 0;
+    const lastIdx = pcts.reduce((last, p, i) => p > 0 ? i : last, -1);
+    const dues = pcts.map((p, i) => {
+      if (i === lastIdx) return round2(currentTotal - allocated);
+      const share = round2(currentTotal * p / 100);
+      allocated += share;
+      return p > 0 ? share : 0;
+    });
+
+    pcts.forEach((p, i) => {
+      if (splitMode === 'equal') {
+        pctInputs[i].value = p ? (Math.round(p * 100) / 100) : '';
+        pctInputs[i].disabled = true;
+      } else {
+        pctInputs[i].disabled = false;
+      }
+      dueEls[i].textContent = money(dues[i]);
+    });
+
+    const sum = round2(pcts.reduce((a, b) => a + b, 0));
+    const sumEl = $('pct-sum');
+    sumEl.textContent = (Math.round(sum * 100) / 100) + '%';
+    sumEl.className = 'v ' + (Math.abs(sum - 100) < 0.01 ? 'ok' : 'warn');
+  }
+
+  function calc() {
+    const p = parseFloat(price.value) || 0;
+    const d = Math.min(Math.max(parseFloat(discount.value) || 0, 0), 100);
+    const t = Math.max(parseFloat(tax.value) || 0, 0);
+
+    const savings = p * (d / 100);
+    const discounted = p - savings;
+    const taxAmount = discounted * (t / 100);
+    const total = discounted + taxAmount;
+    currentTotal = total;
+
+    const commPct = Math.max(parseFloat(commission.value) || 0, 0);
+    const commAmount = total * (commPct / 100);
+
+    renderGauge(d);
+    $('r-discounted').textContent = money(discounted);
+    $('r-savings').textContent = '−' + money(savings);
+    $('r-pill').textContent = (p > 0 ? Math.round(d) : 0) + '%';
+    $('r-tax').textContent = money(taxAmount);
+    $('r-total').textContent = money(total);
+    $('r-commission').textContent = money(commAmount);
+
+    renderSplit();
+  }
+
+  [price, discount, tax, commission].forEach(el => el.addEventListener('input', calc));
+
+  // Name edits can change equal-split membership
+  nameInputs.forEach(el => el.addEventListener('input', renderSplit));
+
+  // Custom % edits
+  pctInputs.forEach((el, i) => el.addEventListener('input', () => {
+    customPct[i] = el.value;
+    renderSplit();
+  }));
+
+  // Mode toggle
+  $('toggle').addEventListener('click', e => {
+    const btn = e.target.closest('button[data-mode]');
+    if (!btn) return;
+    splitMode = btn.dataset.mode;
+    [...$('toggle').children].forEach(b => b.classList.toggle('active', b === btn));
+    renderSplit();
+  });
+
+  $('reset').addEventListener('click', () => {
+    price.value = tax.value = commission.value = '';
+    discount.value = 0;
+    nameInputs.forEach(el => el.value = '');
+    pctInputs.forEach((el, i) => { el.value = ''; customPct[i] = ''; });
+    calc();
+    price.focus();
+  });
+
+  calc();
+</script>
+</body>
+</html>
